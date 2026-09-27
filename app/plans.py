@@ -16,6 +16,10 @@ class PlanNotFound(LookupError):
     pass
 
 
+class InvalidInput(ValueError):
+    """Bad day, date, or servings value. The web app shows it as a 400, the MCP tools as a tool error."""
+
+
 class PlanItem(BaseModel):
     id: int
     day: int | None
@@ -67,12 +71,12 @@ def parse_day(value: str | int | None) -> int | None:
         day = int(value)
         if 0 <= day <= 6:
             return day
-        raise ValueError(f"Day number must be 0 (Monday) to 6 (Sunday), not {day}")
+        raise InvalidInput(f"Day number must be 0 (Monday) to 6 (Sunday), not {day}")
     text = str(value).strip().lower()
     for i, name in enumerate(DAYS):
         if len(text) >= 2 and name.lower().startswith(text):
             return i
-    raise ValueError(f"Unknown day {value!r}. Use a weekday name like 'Monday'.")
+    raise InvalidInput(f"Unknown day {value!r}. Use a weekday name like 'Monday'.")
 
 
 def default_week_start(today: date | None = None) -> date:
@@ -173,7 +177,7 @@ class PlanRepo:
         with self.db.connect() as conn:
             cur = conn.execute(
                 "INSERT INTO meal_plan_items (plan_id, recipe_id, day, servings, created_at) VALUES (?, ?, ?, ?, ?)",
-                (plan_id, recipe_id, parse_day(day), servings or None, _now()),
+                (plan_id, recipe_id, parse_day(day), _check_servings(servings), _now()),
             )
             conn.execute("UPDATE meal_plans SET updated_at = ? WHERE id = ?", (_now(), plan_id))
         return next(i for i in self.get(plan_id).items if i.id == cur.lastrowid)
@@ -183,7 +187,7 @@ class PlanRepo:
             plan_id,
             item_id,
             "UPDATE meal_plan_items SET day = ?, servings = ? WHERE id = ? AND plan_id = ?",
-            (parse_day(day), servings or None, item_id, plan_id),
+            (parse_day(day), _check_servings(servings), item_id, plan_id),
         )
 
     def remove_item(self, plan_id: int, item_id: int) -> None:
@@ -223,11 +227,18 @@ class PlanRepo:
             conn.execute("DELETE FROM grocery_checks WHERE plan_id = ?", (plan_id,))
 
 
+def _check_servings(servings: int | None) -> int | None:
+    """None or 0 = use the recipe's own servings."""
+    if servings is not None and servings < 0:
+        raise InvalidInput(f"Servings must be 1 or more, not {servings}")
+    return servings or None
+
+
 def _as_date(value: date | str) -> date:
     """Parse a date and move it back to the Monday of its week, so day names line up."""
     if not isinstance(value, date):
         try:
             value = date.fromisoformat(value.strip())
         except ValueError as exc:
-            raise ValueError(f"Dates must look like 2026-09-28, not {value!r}") from exc
+            raise InvalidInput(f"Dates must look like 2026-09-28, not {value!r}") from exc
     return value - timedelta(days=value.weekday())

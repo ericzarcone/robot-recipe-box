@@ -89,6 +89,17 @@ async def test_save_rejects_script_urls(mcp, repo):
 
 
 @pytest.mark.anyio
+async def test_servings_must_be_positive(mcp):
+    async with Client(mcp) as client:
+        assert (await call(client, "save_recipe", {"recipe": {"title": "Zero", "servings": 0}})).is_error
+        assert (await call(client, "save_recipe", {"recipe": {"title": "Neg", "prep_minutes": -5}})).is_error
+        saved = (await call(client, "save_recipe", {"recipe": {"title": "Ok", "servings": 2}})).structured_content
+        bad = await call(client, "create_meal_plan", {"recipes": [{"id_or_slug": saved["slug"], "servings": -4}]})
+        assert bad.is_error
+        assert (await call(client, "list_meal_plans")).structured_content["result"] == []
+
+
+@pytest.mark.anyio
 async def test_save_requires_title(mcp):
     async with Client(mcp) as client:
         result = await call(client, "save_recipe", {"recipe": {"ingredients": ["1 egg"]}})

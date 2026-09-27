@@ -101,13 +101,13 @@ class RecipeFields(BaseModel):
     tags: list[str] | None = Field(
         None, description="Short lowercase tags. Example: ['vegetarian', 'weeknight', 'one-pot']."
     )
-    servings: int | None = Field(None, description="Number of servings the recipe makes.")
+    servings: int | None = Field(None, ge=1, description="Number of servings the recipe makes.")
     yield_text: str | None = Field(
         None, description="Yield when servings do not describe it. Example: 'about 24 cookies'."
     )
-    prep_minutes: int | None = Field(None, description="Active prep time in minutes.")
-    cook_minutes: int | None = Field(None, description="Cook or bake time in minutes.")
-    total_minutes: int | None = Field(None, description="Total time in minutes, including resting or marinating.")
+    prep_minutes: int | None = Field(None, ge=0, description="Active prep time in minutes.")
+    cook_minutes: int | None = Field(None, ge=0, description="Cook or bake time in minutes.")
+    total_minutes: int | None = Field(None, ge=0, description="Total time in minutes, including resting or marinating.")
     ingredients: list[Ingredient] | None = Field(None, description="Ingredients in the order they are used.")
     steps: list[Step] | None = Field(
         None, description="Instructions in order. One action or a few related actions per step."

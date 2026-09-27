@@ -125,3 +125,4 @@ def test_templates_have_no_inline_script(client):
         text = path.read_text()
         assert not re.search(r"\son[a-z]+=", text), path.name
         assert not re.search(r"<script>(?!</script>)", text), path.name
+        assert "javascript:" not in text, path.name

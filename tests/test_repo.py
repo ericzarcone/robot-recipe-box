@@ -155,3 +155,43 @@ def test_legacy_digit_slug_still_reachable(repo):
     with repo.db.connect() as conn:
         conn.execute("UPDATE recipes SET slug = '999' WHERE id = ?", (r.id,))
     assert repo.get("999").id == r.id  # no recipe has id 999, so it falls back to the slug
+
+
+def test_concurrent_saves_with_the_same_title(repo):
+    """Review finding: simultaneous same-title saves raced on the slug and failed with IntegrityError."""
+    import threading
+
+    errors, barrier = [], threading.Barrier(8)
+
+    def save():
+        barrier.wait()
+        try:
+            repo.create(RecipeIn(title="Race"))
+        except Exception as exc:  # noqa: BLE001 - the test records any failure
+            errors.append(exc)
+
+    threads = [threading.Thread(target=save) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+    slugs = sorted(r.slug for r in repo.all())
+    assert len(set(slugs)) == 8 and "race" in slugs and "race-8" in slugs
+
+
+def test_unwritable_data_folder_says_how_to_fix(tmp_path):
+    import os
+
+    from app.db import Database
+
+    if os.getuid() == 0:
+        pytest.skip("root can write anywhere")
+    folder = tmp_path / "data"
+    folder.mkdir()
+    folder.chmod(0o500)
+    try:
+        with pytest.raises(PermissionError, match="sudo chown -R"):
+            Database(folder / "recipes.db").migrate()
+    finally:
+        folder.chmod(0o700)

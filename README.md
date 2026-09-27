@@ -47,6 +47,14 @@ docker compose up -d --build
 
 Open `https://recipes.example.com`. Access asks you to log in, and then the app opens.
 
+### On a Linux server
+
+- Install Docker Engine (not Docker Desktop, which only runs while you are logged in) and run `sudo systemctl enable --now docker`. With `restart: unless-stopped`, the containers come back after a reboot or power outage.
+- Before the first start, create the data folder and give it to the app's user. Otherwise Docker creates it owned by root and the app cannot write its database:
+  ```sh
+  mkdir -p data && sudo chown 10001:10001 data
+  ```
+
 ## Connect Claude
 
 1. On claude.ai, go to **Settings → Connectors → Add custom connector**.

@@ -77,7 +77,8 @@ def text_to_steps(text: str) -> list[Step]:
 
 def _int_or_none(value: str | None) -> int | None:
     value = (value or "").strip()
-    return int(value) if value.isdigit() else None
+    # isdigit() alone accepts "²" and other characters that int() rejects.
+    return int(value) if value.isascii() and value.isdigit() else None
 
 
 async def _form_to_fields(request: Request, existing: Recipe | None) -> dict:
@@ -193,9 +194,11 @@ async def create_recipe(request: Request, repo: RecipeRepo = Depends(get_repo)):
 
 def _form_error(exc: ValidationError) -> str:
     first = exc.errors()[0]
-    if first["loc"] and first["loc"][0] == "title":
+    field = str(first["loc"][0]) if first["loc"] else ""
+    if field == "title":
         return "A title is required."
-    return str(first["msg"]).removeprefix("Value error, ")
+    message = str(first["msg"]).removeprefix("Value error, ")
+    return f"{field.replace('_', ' ').capitalize()}: {message}" if field else message
 
 
 @router.get("/r/{slug}")

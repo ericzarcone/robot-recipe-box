@@ -123,6 +123,9 @@ class RecipeRepo:
         values.setdefault("category", UNCATEGORIZED)
         now = _now()
         with self.db.connect() as conn:
+            # Take the write lock before choosing a slug. Otherwise two saves with the same title at the same
+            # moment can both pick the same free slug, and the second fails on the UNIQUE constraint.
+            conn.execute("BEGIN IMMEDIATE")
             duplicate = (
                 conn.execute("SELECT 1 FROM recipes WHERE lower(title) = lower(?)", (values["title"],)).fetchone()
                 is not None

@@ -53,7 +53,7 @@ class CategoryCount(BaseModel):
 class PlanRecipe(BaseModel):
     id_or_slug: str = Field(..., description="Recipe id or slug.")
     day: str | None = Field(None, description="Weekday name like 'Monday'. Omit to leave it unscheduled.")
-    servings: int | None = Field(None, description="Servings to cook. Omit to use the recipe's own servings.")
+    servings: int | None = Field(None, ge=1, description="Servings to cook. Omit to use the recipe's own servings.")
 
 
 class PlanDetail(MealPlan):

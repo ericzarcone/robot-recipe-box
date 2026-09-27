@@ -15,7 +15,7 @@ from app.access import AccessMiddleware, AccessVerifier
 from app.config import MCP_PATH, Settings
 from app.db import Database
 from app.mcp_server import build_mcp
-from app.plans import PlanNotFound, PlanRepo
+from app.plans import InvalidInput, PlanNotFound, PlanRepo
 from app.repo import RecipeNotFound, RecipeRepo
 from app.templating import templates
 
@@ -81,6 +81,10 @@ def create_app(settings: Settings | None = None, verifier: AccessVerifier | None
     async def not_found(request: Request, exc: LookupError):
         kind = "Meal plan" if isinstance(exc, PlanNotFound) else "Recipe"
         return templates.TemplateResponse(request, "404.html", {"kind": kind}, status_code=404)
+
+    @app.exception_handler(InvalidInput)
+    async def invalid_input(request: Request, exc: InvalidInput):
+        return templates.TemplateResponse(request, "error.html", {"message": str(exc)}, status_code=400)
 
     # Mount the MCP route directly (not with Mount) so /mcp works without a trailing-slash redirect.
     mcp_endpoint = next(r.endpoint for r in mcp_app.routes if isinstance(r, Route))

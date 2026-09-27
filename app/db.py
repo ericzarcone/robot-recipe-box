@@ -1,5 +1,6 @@
 """SQLite connection handling and schema migrations."""
 
+import os
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -29,7 +30,7 @@ class Database:
 
     def migrate(self) -> int:
         """Apply migrations/NNNN_*.sql files newer than PRAGMA user_version. Returns the new version."""
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._check_writable()
         with self.connect() as conn:
             conn.execute("PRAGMA journal_mode = WAL")
             current = conn.execute("PRAGMA user_version").fetchone()[0]
@@ -40,3 +41,18 @@ class Database:
                 conn.executescript(f"BEGIN;\n{script.read_text()}\nPRAGMA user_version = {version};\nCOMMIT;")
                 current = version
             return current
+
+    def _check_writable(self) -> None:
+        """Fail with a fix, not SQLite's bare "unable to open database file". On Linux, Docker creates a
+        missing bind-mount folder owned by root, and the app (a non-root user) cannot write to it."""
+        folder = self.path.parent
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            pass
+        if os.access(folder, os.W_OK) and (not self.path.exists() or os.access(self.path, os.W_OK)):
+            return
+        raise PermissionError(
+            f"Cannot write the database in {folder} as user id {os.getuid()}. On the Docker host, run: "
+            f"sudo chown -R {os.getuid()}:{os.getgid()} ./data"
+        )

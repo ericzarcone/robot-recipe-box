@@ -222,3 +222,34 @@ def test_plan_routes_require_access(anon):
     for path in ("/plans", "/plans/1", "/plans/1/grocery"):
         assert anon.get(path, headers=HTML).status_code == 403
     assert anon.post("/plans/1/grocery/check", json={"key": "x", "checked": True}).status_code == 401
+
+
+# ---------- bad input gives a clean error, not a 500 ----------
+
+
+def test_bad_plan_inputs_are_400(client, recipe):
+    plans = client.app.state.plans
+    plan = plans.create()
+    item = plans.add_item(plan.id, recipe.id)
+    cases = [
+        ("/plans/add", {"recipe": str(recipe.id), "plan": "abc"}),
+        (f"/plans/{plan.id}/items/{item.id}", {"day": "funday"}),
+        (f"/plans/{plan.id}/items/{item.id}", {"day": "9"}),
+        (f"/plans/{plan.id}/items/{item.id}", {"servings": "-4"}),
+        (f"/plans/{plan.id}/items", {"recipe": str(recipe.id), "servings": "²"}),
+        (f"/plans/{plan.id}", {"week_start": "not-a-date"}),
+    ]
+    for path, data in cases:
+        r = client.post(path, data=data)
+        assert r.status_code == 400, (path, data, r.status_code)
+        assert "That didn't work" in r.text
+    assert len(plans.get(plan.id).items) == 1  # nothing half-applied
+
+
+def test_bad_recipe_numbers(client, recipe):
+    # "²" is a Unicode digit that int() rejects. It is ignored, not a crash.
+    assert client.post("/new", data={"title": "Squared", "servings": "²"}, follow_redirects=False).status_code == 303
+    assert client.app.state.repo.get("squared").servings is None
+    r = client.post(f"/r/{recipe.slug}/edit", data={"title": "X", "servings": "0"})
+    assert r.status_code == 422
+    assert "Servings: Input should be greater than or equal to 1" in r.text

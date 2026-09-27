@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from app.plans import DAYS, PlanRepo, default_week_start
+from app.plans import DAYS, InvalidInput, PlanRepo, default_week_start
 from app.repo import RecipeRepo
 from app.templating import templates
 from app.web import get_repo
@@ -24,7 +24,11 @@ def _wants_json(request: Request) -> bool:
 
 def _int_or_none(value: str | None) -> int | None:
     value = (value or "").strip()
-    return int(value) if value.isdigit() and int(value) > 0 else None
+    if not value:
+        return None
+    if not (value.isascii() and value.isdigit()):
+        raise InvalidInput(f"Expected a whole number, not {value!r}")
+    return int(value)
 
 
 # ---------- favorites ----------
@@ -69,7 +73,7 @@ def add_from_recipe(
     repo: RecipeRepo = Depends(get_repo),
 ):
     """The 'Add to plan' form on a recipe page. plan is a plan id or 'new'."""
-    target = plans.create() if plan == "new" else plans.get(int(plan))
+    target = plans.create() if plan == "new" else plans.get(_int_or_none(plan) or 0)
     plans.add_item(target.id, recipe, day or None, _int_or_none(servings))
     return RedirectResponse(f"/r/{repo.get(recipe).slug}?added={target.id}", status_code=303)
 
