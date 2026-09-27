@@ -253,3 +253,21 @@ def test_bad_recipe_numbers(client, recipe):
     r = client.post(f"/r/{recipe.slug}/edit", data={"title": "X", "servings": "0"})
     assert r.status_code == 422
     assert "Servings: Input should be greater than or equal to 1" in r.text
+
+
+def test_plan_redirects_point_at_the_stored_plan(client, recipe):
+    plans = client.app.state.plans
+    r = client.post("/plans", data={"name": "Week"}, follow_redirects=False)
+    plan_id = int(r.headers["location"].removeprefix("/plans/"))
+    item = plans.add_item(plan_id, recipe.id)
+
+    def location(path, data=None):
+        return client.post(path, data=data or {}, follow_redirects=False).headers["location"]
+
+    assert location(f"/plans/{plan_id}", {"name": "Renamed"}) == f"/plans/{plan_id}"
+    assert location(f"/plans/{plan_id}/items", {"recipe": str(recipe.id)}) == f"/plans/{plan_id}"
+    assert location(f"/plans/{plan_id}/items/{item.id}", {"day": "2"}) == f"/plans/{plan_id}#item-{item.id}"
+    assert location(f"/plans/{plan_id}/grocery/reset") == f"/plans/{plan_id}/grocery"
+    assert location(f"/plans/{plan_id}/items/{item.id}/delete") == f"/plans/{plan_id}"
+    # A plan that does not exist gets a 404, not a redirect.
+    assert client.post("/plans/999/grocery/reset", follow_redirects=False).status_code == 404
