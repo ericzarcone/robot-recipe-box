@@ -9,7 +9,7 @@
       <label class="sr-only" for="pick-day-{{ r.id }}">Day</label>
       <select name="day" id="pick-day-{{ r.id }}">
         <option value="">Any day</option>
-        {% for d in days %}<option value="{{ loop.index0 }}">{{ d[:3] }}</option>{% endfor %}
+        {% for d in days %}<option value="{{ loop.index0 }}"{% if selected_day == loop.index0 %} selected{% endif %}>{{ d[:3] }}</option>{% endfor %}
       </select>
       <button type="submit" class="btn small-btn">Add</button>
     </form>

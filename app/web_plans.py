@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from app.plans import DAYS, InvalidInput, MealPlan, PlanRepo, default_week_start
+from app.plans import DAYS, InvalidInput, MealPlan, PlanRepo, default_week_start, parse_day
 from app.repo import RecipeRepo
 from app.templating import templates
 from app.web import get_repo
@@ -106,17 +106,24 @@ def recipe_picker(
     request: Request,
     plan_id: int,
     q: str = "",
+    day: str = "",
     repo: RecipeRepo = Depends(get_repo),
     plans: PlanRepo = Depends(get_plans),
 ):
-    """Partial: recipes to add. With no query: favorites first, then everything else."""
+    """Partial: recipes to add. With no query: favorites first, then everything else.
+    day: preselect this weekday in each row (the day's "+" button)."""
     plan = plans.get(plan_id)
+    selected_day = parse_day(day)
     if q.strip():
         results = repo.search(q, limit=30)
     else:
         everything = repo.summaries()
         results = sorted(everything, key=lambda r: (not r.favorite, r.title.lower()))[:30]
-    return templates.TemplateResponse(request, "_picker.html", {"plan": plan, "results": results, "days": DAYS, "q": q})
+    return templates.TemplateResponse(
+        request,
+        "_picker.html",
+        {"plan": plan, "results": results, "days": DAYS, "q": q, "selected_day": selected_day},
+    )
 
 
 @router.post("/plans/{plan_id}/items")
@@ -139,6 +146,17 @@ def update_item(
     plan = plans.get(plan_id)
     item = next((i for i in plan.items if i.id == item_id), None)
     return _plan_redirect(plan, f"#item-{item.id}" if item else "")
+
+
+class MoveIn(BaseModel):
+    day: int | None  # 0 = Monday ... 6 = Sunday, None = any day
+
+
+@router.post("/plans/{plan_id}/items/{item_id}/move")
+def move_item(plan_id: int, item_id: int, body: MoveIn, plans: PlanRepo = Depends(get_plans)):
+    """Drag and drop between days. JSON in, JSON out, no redirect."""
+    plans.move_item(plan_id, item_id, body.day)
+    return {"ok": True}
 
 
 @router.post("/plans/{plan_id}/items/{item_id}/delete")

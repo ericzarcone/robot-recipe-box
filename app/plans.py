@@ -190,6 +190,15 @@ class PlanRepo:
             (parse_day(day), _check_servings(servings), item_id, plan_id),
         )
 
+    def move_item(self, plan_id: int, item_id: int, day: str | int | None) -> None:
+        """Change only the day. Servings stay as they are."""
+        self._touch_item(
+            plan_id,
+            item_id,
+            "UPDATE meal_plan_items SET day = ? WHERE id = ? AND plan_id = ?",
+            (parse_day(day), item_id, plan_id),
+        )
+
     def remove_item(self, plan_id: int, item_id: int) -> None:
         self._touch_item(
             plan_id, item_id, "DELETE FROM meal_plan_items WHERE id = ? AND plan_id = ?", (item_id, plan_id)
