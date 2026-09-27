@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Meal plans · Robot Recipe Box{% endblock %}
+{% block content %}
+<h1>Meal plans</h1>
+<form class="new-plan card" method="post" action="/plans">
+  <div class="row">
+    <div>
+      <label for="np-start">Week starting</label>
+      <input id="np-start" name="week_start" type="date" value="{{ default_start }}">
+    </div>
+    <div>
+      <label for="np-name">Name <span class="hint">optional</span></label>
+      <input id="np-name" name="name" placeholder="Week of …">
+    </div>
+  </div>
+  <button type="submit" class="btn primary">New plan</button>
+</form>
+
+{% if plans %}
+<div class="plan-list">
+  {% for p in plans %}
+  <a class="card plan-card" href="/plans/{{ p.id }}">
+    <h3>{{ p.name }}</h3>
+    <p class="meta"><span>{{ p.recipe_count }} recipe{{ "" if p.recipe_count == 1 else "s" }}</span>
+      {% if p.week_start %}<span>Starts {{ p.week_start }}</span>{% endif %}</p>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty"><p>No plans yet. Start one above, or ask Claude to plan your week.</p></div>
+{% endif %}
+{% endblock %}

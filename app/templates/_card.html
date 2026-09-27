@@ -1,0 +1,10 @@
+<a class="card recipe-card" href="/r/{{ r.slug }}">
+  <h3>{% if r.favorite %}<span class="star" aria-label="Favorite">★</span> {% endif %}{{ r.title }}</h3>
+  {% if r.description %}<p class="desc">{{ r.description }}</p>{% endif %}
+  <p class="meta">
+    {%- if r.total_minutes %}<span>{{ r.total_minutes | minutes }}</span>{% endif -%}
+    {%- if r.servings %}<span>Serves {{ r.servings }}</span>{% endif -%}
+    {%- if show_category %}<span>{{ r.category }}</span>{% endif -%}
+  </p>
+  {% if r.tags %}<p class="tags">{% for t in r.tags[:4] %}<span class="tag">{{ t }}</span>{% endfor %}</p>{% endif %}
+</a>

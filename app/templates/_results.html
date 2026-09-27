@@ -1,0 +1,31 @@
+{% if results is not none %}
+  <p class="result-count" aria-live="polite">
+    {{ results | length }} result{{ "" if results | length == 1 else "s" }} for “{{ q }}”{% if category %} in {{ category }}{% endif %}{% if favorites %} in favorites{% endif %}
+  </p>
+  {% if results %}
+  <div class="grid">
+    {% for r in results %}{% with show_category = true %}{% include "_card.html" %}{% endwith %}{% endfor %}
+  </div>
+  {% else %}
+  <div class="empty"><p>No recipes match. Try fewer words, or ask Claude to make one.</p></div>
+  {% endif %}
+{% elif groups %}
+  {% for cat, items in groups %}
+  <section class="category" id="cat-{{ loop.index }}">
+    <h2>{{ cat }} <span class="count">{{ items | length }}</span></h2>
+    <div class="grid">
+      {% for r in items %}{% include "_card.html" %}{% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+{% elif favorites %}
+  <div class="empty">
+    <h2>No favorites yet</h2>
+    <p>Tap ☆ on a recipe to add it here, or ask Claude to favorite one.</p>
+  </div>
+{% else %}
+  <div class="empty">
+    <h2>No recipes yet</h2>
+    <p>Ask Claude to save a recipe with the Recipe Box connector, or <a href="/new">add one by hand</a>.</p>
+  </div>
+{% endif %}

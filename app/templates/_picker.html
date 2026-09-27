@@ -1,0 +1,21 @@
+{% if results %}
+{% if not q %}<p class="muted small">Favorites first. Search to find others.</p>{% endif %}
+<ul class="picker-list">
+  {% for r in results %}
+  <li>
+    <span class="title">{% if r.favorite %}<span class="star">★</span> {% endif %}{{ r.title }}</span>
+    <form method="post" action="/plans/{{ plan.id }}/items" class="inline picker-add">
+      <input type="hidden" name="recipe" value="{{ r.id }}">
+      <label class="sr-only" for="pick-day-{{ r.id }}">Day</label>
+      <select name="day" id="pick-day-{{ r.id }}">
+        <option value="">Any day</option>
+        {% for d in days %}<option value="{{ loop.index0 }}">{{ d[:3] }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn small-btn">Add</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted">No recipes match “{{ q }}”.</p>
+{% endif %}

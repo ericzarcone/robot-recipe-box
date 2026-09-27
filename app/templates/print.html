@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/print.css?v={{ asset_version }}">
+  <title>{{ recipe.title }}</title>
+</head>
+<body{% if autoprint %} data-autoprint{% endif %}>
+  <div class="toolbar">
+    <a href="/r/{{ recipe.slug }}">← Back</a>
+    <span id="fit-status" class="fit-status"></span>
+    <button type="button" id="print-btn">Print</button>
+  </div>
+  <div class="viewport" id="viewport"><div class="page" id="page"><div class="sheet" id="sheet">
+    <header>
+      <h1>{{ recipe.title }}</h1>
+      <p class="meta">
+        {%- set bits = [] -%}
+        {%- if recipe.prep_minutes %}{% set _ = bits.append("Prep " ~ (recipe.prep_minutes | minutes)) %}{% endif -%}
+        {%- if recipe.cook_minutes %}{% set _ = bits.append("Cook " ~ (recipe.cook_minutes | minutes)) %}{% endif -%}
+        {%- if recipe.display_minutes %}{% set _ = bits.append("Total " ~ (recipe.display_minutes | minutes)) %}{% endif -%}
+        {%- if recipe.servings %}{% set _ = bits.append("Serves " ~ recipe.servings) %}{% endif -%}
+        {%- if recipe.yield_text %}{% set _ = bits.append("Makes " ~ recipe.yield_text) %}{% endif -%}
+        {{ bits | join(" · ") }}
+      </p>
+      {% if recipe.description %}<p class="desc">{{ recipe.description }}</p>{% endif %}
+    </header>
+    <div class="cols">
+      <section class="ingredients">
+        <h2>Ingredients</h2>
+        {% for section, items in recipe.ingredients | sections %}
+          {% if section %}<h3>{{ section }}</h3>{% endif %}
+          <ul>{% for i in items %}<li>{{ i.raw }}</li>{% endfor %}</ul>
+        {% endfor %}
+      </section>
+      <section class="steps">
+        <h2>Steps</h2>
+        {% set counter = namespace(n=0) %}
+        {% for section, items in recipe.steps | sections %}
+          {% if section %}<h3>{{ section }}</h3>{% endif %}
+          <ol start="{{ counter.n + 1 }}">{% for s in items %}{% set counter.n = counter.n + 1 %}<li>{{ s.text }}</li>{% endfor %}</ol>
+        {% endfor %}
+      </section>
+    </div>
+    {% if recipe.notes %}
+    <section class="notes">
+      <h2>Notes</h2>
+      {% for para in recipe.notes.split("\n") if para.strip() %}<p>{{ para }}</p>{% endfor %}
+    </section>
+    {% endif %}
+  </div></div></div>
+  <script src="/static/print-fit.js?v={{ asset_version }}"></script>
+</body>
+</html>

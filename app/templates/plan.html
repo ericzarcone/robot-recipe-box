@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.name }} · Robot Recipe Box{% endblock %}
+{% block content %}
+<header class="plan-head">
+  <p class="crumbs"><a href="/plans">Meal plans</a></p>
+  <h1>{{ plan.name }}</h1>
+  <div class="actions">
+    <a class="btn primary" href="/plans/{{ plan.id }}/grocery">Grocery list</a>
+    <button type="button" class="btn" id="picker-toggle" aria-expanded="false" aria-controls="picker">Add recipes</button>
+    <details class="plan-settings">
+      <summary class="btn">Settings</summary>
+      <form method="post" action="/plans/{{ plan.id }}" class="card">
+        <label for="ps-name">Name</label>
+        <input id="ps-name" name="name" value="{{ plan.name }}">
+        <label for="ps-start">Week starting</label>
+        <input id="ps-start" name="week_start" type="date" value="{{ plan.week_start or '' }}">
+        <div class="actions"><button class="btn primary" type="submit">Save</button></div>
+      </form>
+      <form method="post" action="/plans/{{ plan.id }}/delete"
+            data-confirm="Delete the plan “{{ plan.name }}”? Recipes stay saved.">
+        <button class="btn danger" type="submit">Delete plan</button>
+      </form>
+    </details>
+  </div>
+</header>
+
+<section class="picker card" id="picker" data-plan="{{ plan.id }}" hidden>
+  <input type="search" id="picker-q" placeholder="Search your recipes…" aria-label="Search recipes to add" autocomplete="off">
+  <div id="picker-results" aria-live="polite"></div>
+</section>
+
+<div class="week">
+  {% for day, items in plan.by_day() %}
+  {% if day is not none or items %}
+  <section class="day{% if not items %} empty-day{% endif %}{% if day is not none and plan.date_for(day) == today %} today{% endif %}">
+    <h2>
+      {{ days[day] if day is not none else "Any day" }}
+      {% if day is not none and plan.date_for(day) %}<span class="date">{{ plan.date_for(day).strftime("%b") }} {{ plan.date_for(day).day }}</span>{% endif %}
+    </h2>
+    {% for item in items %}
+    <div class="plan-item" id="item-{{ item.id }}">
+      <a class="title" href="/r/{{ item.recipe.slug }}">{% if item.recipe.favorite %}<span class="star">★</span> {% endif %}{{ item.recipe.title }}</a>
+      <form method="post" action="/plans/{{ plan.id }}/items/{{ item.id }}" class="item-edit autosubmit">
+        <label class="sr-only" for="day-{{ item.id }}">Day</label>
+        <select id="day-{{ item.id }}" name="day">
+          <option value=""{% if item.day is none %} selected{% endif %}>Any day</option>
+          {% for d in days %}<option value="{{ loop.index0 }}"{% if item.day == loop.index0 %} selected{% endif %}>{{ d[:3] }}</option>{% endfor %}
+        </select>
+        <label class="sr-only" for="srv-{{ item.id }}">Servings</label>
+        <input id="srv-{{ item.id }}" name="servings" inputmode="numeric" size="3"
+               value="{{ item.servings or '' }}" placeholder="{{ item.recipe.servings or '–' }}" aria-describedby="srv-hint">
+        <span class="unit">servings</span>
+        <noscript><button class="btn" type="submit">Save</button></noscript>
+      </form>
+      <form method="post" action="/plans/{{ plan.id }}/items/{{ item.id }}/delete" class="inline">
+        <button type="submit" class="icon-btn" aria-label="Remove {{ item.recipe.title }} from plan">✕</button>
+      </form>
+    </div>
+    {% else %}
+    <p class="muted small nothing">Nothing planned</p>
+    {% endfor %}
+  </section>
+  {% endif %}
+  {% endfor %}
+</div>
+<p class="muted small" id="srv-hint">Servings scale the grocery list. Leave blank to use the recipe's own servings.</p>
+{% endblock %}
+{% block scripts %}<script src="/static/plan.js?v={{ asset_version }}" defer></script>{% endblock %}

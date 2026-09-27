@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="search" action="/" method="get" role="search" id="search-form">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search recipes, ingredients, tags…"
+         aria-label="Search recipes" autocomplete="off" enterkeyhint="search" id="search-input">
+  {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+  {% if favorites %}<input type="hidden" name="favorites" value="1">{% endif %}
+</form>
+{% if categories %}
+<nav class="chips" aria-label="Categories">
+  <a href="/{% if q %}?q={{ q | urlencode }}{% endif %}" class="chip{% if not category and not favorites %} active{% endif %}">All</a>
+  <a href="/?favorites=1{% if q %}&q={{ q | urlencode }}{% endif %}" class="chip{% if favorites %} active{% endif %}">★ Favorites</a>
+  {% for c, n in categories %}
+  <a href="/?category={{ c | urlencode }}{% if q %}&q={{ q | urlencode }}{% endif %}"
+     class="chip{% if c == category %} active{% endif %}">{{ c }} <span class="count">{{ n }}</span></a>
+  {% endfor %}
+</nav>
+{% endif %}
+<div id="results">
+  {% include "_results.html" %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/search.js?v={{ asset_version }}" defer></script>{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Not found · Robot Recipe Box{% endblock %}
+{% block content %}
+<div class="empty">
+  <h1>{{ kind or "Page" }} not found</h1>
+  <p>It may have been deleted or renamed.</p>
+  <p><a class="btn" href="/">Back to all recipes</a></p>
+</div>
+{% endblock %}
