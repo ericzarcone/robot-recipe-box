@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    image: robot-recipe-box
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/data
+    # Uncomment to reach the app on your LAN at http://<this machine>:8000.
+    # Cooking mode's screen wake lock only works over HTTPS, so use the tunnel URL on your phone.
+    ports:
+      - "8000:8000"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      app:
+        condition: service_healthy

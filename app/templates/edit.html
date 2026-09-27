@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit " ~ recipe.title if recipe else "New recipe" }} · Robot Recipe Box{% endblock %}
+{% block content %}
+<form class="edit" method="post" action="{{ '/r/' ~ recipe.slug ~ '/edit' if recipe else '/new' }}">
+  <h1>{{ "Edit recipe" if recipe else "New recipe" }}</h1>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+  <label for="f-title">Title</label>
+  <input id="f-title" name="title" value="{{ values.title or '' }}" required>
+
+  <label for="f-description">Description</label>
+  <textarea id="f-description" name="description" rows="2">{{ values.description or '' }}</textarea>
+
+  <div class="row">
+    <div>
+      <label for="f-category">Category</label>
+      <input id="f-category" name="category" list="category-list" value="{{ values.category or '' }}">
+      <datalist id="category-list">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
+    </div>
+    <div>
+      <label for="f-cuisine">Cuisine</label>
+      <input id="f-cuisine" name="cuisine" value="{{ values.cuisine or '' }}">
+    </div>
+  </div>
+
+  <label for="f-tags">Tags <span class="hint">comma separated</span></label>
+  <input id="f-tags" name="tags" value="{{ values.tags or '' }}">
+
+  <div class="row four">
+    <div><label for="f-servings">Servings</label>
+      <input id="f-servings" name="servings" inputmode="numeric" value="{{ values.servings or '' }}"></div>
+    <div><label for="f-prep">Prep min</label>
+      <input id="f-prep" name="prep_minutes" inputmode="numeric" value="{{ values.prep_minutes or '' }}"></div>
+    <div><label for="f-cook">Cook min</label>
+      <input id="f-cook" name="cook_minutes" inputmode="numeric" value="{{ values.cook_minutes or '' }}"></div>
+    <div><label for="f-total">Total min</label>
+      <input id="f-total" name="total_minutes" inputmode="numeric" value="{{ values.total_minutes or '' }}"></div>
+  </div>
+
+  <label for="f-yield">Makes <span class="hint">optional, e.g. “about 24 cookies”</span></label>
+  <input id="f-yield" name="yield_text" value="{{ values.yield_text or '' }}">
+
+  <label for="f-ingredients">Ingredients <span class="hint">one per line · “## Sauce” starts a section</span></label>
+  <textarea id="f-ingredients" name="ingredients" rows="12" class="mono">{{ values.ingredients or '' }}</textarea>
+
+  <label for="f-steps">Steps <span class="hint">one per line · “## Sauce” starts a section</span></label>
+  <textarea id="f-steps" name="steps" rows="12">{{ values.steps or '' }}</textarea>
+
+  <label for="f-notes">Notes</label>
+  <textarea id="f-notes" name="notes" rows="4">{{ values.notes or '' }}</textarea>
+
+  <label for="f-source-url">Source URL</label>
+  <input id="f-source-url" name="source_url" type="url" value="{{ values.source_url or '' }}">
+
+  <div class="actions">
+    <button type="submit" class="btn primary">Save</button>
+    <a class="btn" href="{{ '/r/' ~ recipe.slug if recipe else '/' }}">Cancel</a>
+  </div>
+</form>
+
+{% if recipe %}
+<form class="danger-zone" method="post" action="/r/{{ recipe.slug }}/delete"
+      data-confirm="Delete “{{ recipe.title }}”? This cannot be undone.">
+  <button type="submit" class="btn danger">Delete recipe</button>
+</form>
+{% endif %}
+{% endblock %}

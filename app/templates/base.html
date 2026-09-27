@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbf7f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b1714" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Recipes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/static/icon-180.png">
+  <link rel="stylesheet" href="/static/app.css?v={{ asset_version }}">
+  <title>{% block title %}Robot Recipe Box{% endblock %}</title>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="/static/icon.svg" alt="" width="28" height="28">
+      <span>Recipe Box</span>
+    </a>
+    {% set user = request.state.user %}{# undefined when Access middleware did not run (healthz) #}
+    {% if user %}
+    <nav class="topnav">
+      <a href="/?favorites=1" aria-label="Favorites">★<span class="wide"> Favorites</span></a>
+      <a href="/plans">Plans</a>
+      <a href="/new" aria-label="New recipe">+<span class="wide"> New</span></a>
+      {% if not user.dev %}<a href="/cdn-cgi/access/logout" title="Signed in as {{ user.email }}">Log out</a>{% endif %}
+    </nav>
+    {% endif %}
+  </header>
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+  {% if user %}
+  <footer class="site-foot wrap"><a href="/export.json">Export all recipes (JSON)</a></footer>
+  {% endif %}
+  <script src="/static/app.js?v={{ asset_version }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

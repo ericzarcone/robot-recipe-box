@@ -1,0 +1,68 @@
+/* One-page recipe sheet, US Letter. print-fit.js shrinks --fs until the sheet fits. */
+@page { size: letter; margin: 0.5in; }
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #e9e4de;
+  color: #111;
+  font-family: "Iowan Old Style", "New York", Georgia, "Times New Roman", serif;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.toolbar {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: #fff; border-bottom: 1px solid #ddd;
+  font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.toolbar a { color: #b8452b; text-decoration: none; font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
+.toolbar button {
+  margin-left: auto; min-height: 44px; padding: 0 20px; border-radius: 999px; border: 0;
+  background: #b8452b; color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+}
+.fit-status { color: #6b5d52; font-size: 13px; }
+.fit-status.over { color: #a3261b; font-weight: 600; }
+
+.viewport { padding: 16px; overflow: hidden; }
+.page {
+  width: 8.5in; height: 11in; padding: 0.5in;
+  margin: 0 auto; background: #fff;
+  box-shadow: 0 2px 16px rgb(0 0 0 / 15%);
+  transform-origin: top left;
+}
+
+.sheet { --fs: 12pt; width: 7.5in; font-size: var(--fs); line-height: 1.35; }
+.sheet h1 { font-size: 2em; line-height: 1.1; margin: 0 0 0.2em; }
+.sheet h2 {
+  font: 700 0.8em -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 0 0 0.5em; padding-bottom: 0.25em; border-bottom: 1.5px solid #111;
+}
+.sheet h3 { font-size: 0.95em; font-style: italic; margin: 0.6em 0 0.2em; }
+.meta { margin: 0 0 0.4em; font: 0.85em -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; color: #444; }
+.desc { margin: 0 0 0.6em; font-style: italic; color: #333; }
+header { margin-bottom: 0.9em; padding-bottom: 0.6em; border-bottom: 3px double #111; }
+
+.cols { display: grid; grid-template-columns: 1fr 1.9fr; gap: 0 0.3in; }
+.ingredients ul { margin: 0; padding: 0; list-style: none; }
+.ingredients li { padding: 0.18em 0 0.18em 1.1em; position: relative; border-bottom: 0.5px solid #ccc; }
+.ingredients li::before { content: "□"; position: absolute; left: 0; font-size: 0.9em; top: 0.2em; }
+.steps ol { margin: 0; padding-left: 1.5em; }
+.steps li { margin-bottom: 0.45em; padding-left: 0.2em; }
+.steps li::marker { font-weight: 700; }
+.notes { margin-top: 0.8em; padding-top: 0.5em; border-top: 1px solid #999; }
+.notes p { margin: 0 0 0.35em; }
+
+@media print {
+  body { background: #fff; }
+  .toolbar { display: none; }
+  .viewport { padding: 0; height: auto !important; overflow: visible; }
+  .page { width: auto; height: auto; padding: 0; margin: 0; box-shadow: none; transform: none !important; }
+  .sheet { width: 100%; }
+  .ingredients li, .steps li { break-inside: avoid; }
+}

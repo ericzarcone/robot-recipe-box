@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Grocery list · {{ plan.name }}{% endblock %}
+{% block body_class %}grocery-page{% endblock %}
+{% block content %}
+<header class="plan-head">
+  <p class="crumbs"><a href="/plans/{{ plan.id }}">{{ plan.name }}</a></p>
+  <h1>Grocery list</h1>
+  <p class="muted">{{ item_count }} item{{ "" if item_count == 1 else "s" }} for {{ plan.items | length }} recipe{{ "" if plan.items | length == 1 else "s" }}.
+    <span id="remaining"></span></p>
+  <div class="actions">
+    <button type="button" class="btn primary" id="share-list" hidden>Share</button>
+    <button type="button" class="btn" id="copy-list">Copy</button>
+    <button type="button" class="btn" data-print>Print</button>
+    <form method="post" action="/plans/{{ plan.id }}/grocery/reset" class="inline">
+      <button type="submit" class="btn">Uncheck all</button>
+    </form>
+  </div>
+  <p class="notice" id="copy-status" role="status" hidden></p>
+</header>
+
+{% if aisles %}
+<div class="grocery" id="grocery" data-plan="{{ plan.id }}">
+  {% for aisle in aisles %}
+  <section class="aisle">
+    <h2>{{ aisle.name }}</h2>
+    <ul>
+      {% for item in aisle.items %}
+      <li>
+        <label class="grocery-item">
+          <input type="checkbox" data-key="{{ item.key }}" data-line="{{ item.line }}"{% if item.checked %} checked{% endif %}>
+          <span class="what"><span class="name">{{ item.name }}</span>{% if item.amounts %} <span class="amount">{{ item.amounts | join(" + ") }}</span>{% endif %}</span>
+          <span class="for">{{ item.recipes | join(", ") }}</span>
+        </label>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty"><p>This plan has no recipes yet. <a href="/plans/{{ plan.id }}">Add some</a>.</p></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="/static/grocery.js?v={{ asset_version }}" defer></script>{% endblock %}

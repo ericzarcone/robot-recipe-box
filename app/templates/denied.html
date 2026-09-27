@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Not signed in · Robot Recipe Box{% endblock %}
+{% block content %}
+<div class="empty">
+  <h1>Not signed in</h1>
+  <p>{{ reason }}</p>
+  <p>This app only accepts requests that come through Cloudflare Access.</p>
+</div>
+{% endblock %}
