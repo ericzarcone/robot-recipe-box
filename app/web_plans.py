@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from app.plans import DAYS, InvalidInput, PlanRepo, default_week_start
+from app.plans import DAYS, InvalidInput, MealPlan, PlanRepo, default_week_start
 from app.repo import RecipeRepo
 from app.templating import templates
 from app.web import get_repo
@@ -29,6 +29,12 @@ def _int_or_none(value: str | None) -> int | None:
     if not (value.isascii() and value.isdigit()):
         raise InvalidInput(f"Expected a whole number, not {value!r}")
     return int(value)
+
+
+def _plan_redirect(plan: MealPlan, suffix: str = "") -> RedirectResponse:
+    """Redirect to a plan page. The URL uses ids read back from the database, never text from the request,
+    so no request value can steer the redirect to another site (CodeQL py/url-redirection)."""
+    return RedirectResponse(f"/plans/{plan.id}{suffix}", status_code=303)
 
 
 # ---------- favorites ----------
@@ -60,7 +66,7 @@ def plan_list(request: Request, plans: PlanRepo = Depends(get_plans)):
 @router.post("/plans")
 def create_plan(name: str = Form(""), week_start: str = Form(""), plans: PlanRepo = Depends(get_plans)):
     plan = plans.create(name, week_start or None)
-    return RedirectResponse(f"/plans/{plan.id}", status_code=303)
+    return _plan_redirect(plan)
 
 
 @router.post("/plans/add")
@@ -86,8 +92,7 @@ def plan_page(request: Request, plan_id: int, plans: PlanRepo = Depends(get_plan
 
 @router.post("/plans/{plan_id}")
 def update_plan(plan_id: int, name: str = Form(""), week_start: str = Form(""), plans: PlanRepo = Depends(get_plans)):
-    plans.update(plan_id, name, week_start or None)
-    return RedirectResponse(f"/plans/{plan_id}", status_code=303)
+    return _plan_redirect(plans.update(plan_id, name, week_start or None))
 
 
 @router.post("/plans/{plan_id}/delete")
@@ -123,7 +128,7 @@ def add_item(
     plans: PlanRepo = Depends(get_plans),
 ):
     plans.add_item(plan_id, recipe, day or None, _int_or_none(servings))
-    return RedirectResponse(f"/plans/{plan_id}", status_code=303)
+    return _plan_redirect(plans.get(plan_id))
 
 
 @router.post("/plans/{plan_id}/items/{item_id}")
@@ -131,13 +136,15 @@ def update_item(
     plan_id: int, item_id: int, day: str = Form(""), servings: str = Form(""), plans: PlanRepo = Depends(get_plans)
 ):
     plans.update_item(plan_id, item_id, day or None, _int_or_none(servings))
-    return RedirectResponse(f"/plans/{plan_id}#item-{item_id}", status_code=303)
+    plan = plans.get(plan_id)
+    item = next((i for i in plan.items if i.id == item_id), None)
+    return _plan_redirect(plan, f"#item-{item.id}" if item else "")
 
 
 @router.post("/plans/{plan_id}/items/{item_id}/delete")
 def remove_item(plan_id: int, item_id: int, plans: PlanRepo = Depends(get_plans)):
     plans.remove_item(plan_id, item_id)
-    return RedirectResponse(f"/plans/{plan_id}", status_code=303)
+    return _plan_redirect(plans.get(plan_id))
 
 
 # ---------- grocery list ----------
@@ -171,4 +178,4 @@ def check_item(plan_id: int, body: CheckIn, plans: PlanRepo = Depends(get_plans)
 @router.post("/plans/{plan_id}/grocery/reset")
 def reset_checks(plan_id: int, plans: PlanRepo = Depends(get_plans)):
     plans.clear_checks(plan_id)
-    return RedirectResponse(f"/plans/{plan_id}/grocery", status_code=303)
+    return _plan_redirect(plans.get(plan_id), "/grocery")
