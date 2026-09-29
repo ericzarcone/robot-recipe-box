@@ -311,10 +311,16 @@ select { min-height: 44px; }
 .week { display: grid; gap: 12px; }
 @media (min-width: 900px) { .week { grid-template-columns: repeat(2, 1fr); } }
 .day { padding: 12px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
-.day h2 { font-size: 1.05rem; display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.day h2 { font-size: 1.05rem; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.day-add { margin-left: auto; font-size: 1.4rem; line-height: 1; color: var(--accent); }
+.day-add:hover, .day-add[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
+.day .picker { margin: 10px 0 4px; }
+.picker-for { margin: 0 0 8px; font-weight: 600; }
 .day .date { font-family: var(--font); font-size: .85rem; font-weight: 500; color: var(--muted); }
 .day.today { border-color: var(--accent); }
-.day.empty-day { background: transparent; }
+/* Days with nothing planned. Uses :has() so drag and drop can move items without re-rendering. */
+.day:not(:has(.plan-item)) { background: transparent; }
+.day:has(.plan-item) .nothing { display: none; }
 .nothing { margin: 0; }
 .plan-item { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 6px 0; border-top: 1px solid var(--line); }
 .plan-item:first-of-type { border-top: 0; }
@@ -356,3 +362,24 @@ select { min-height: 44px; }
 .site-foot a { color: var(--muted); }
 body.cooking .site-foot { display: none; }
 @media print { .site-foot { display: none; } }
+
+/* ---------- drag and drop between days ---------- */
+.drag-handle {
+  flex: none; width: 32px; min-height: 44px; margin-left: -6px; padding: 0;
+  border: 0; border-radius: 8px; background: none; color: var(--muted);
+  font-size: 1.1rem; line-height: 1; cursor: grab;
+  touch-action: none; /* the finger drags the recipe instead of scrolling the page */
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.drag-handle:hover { background: var(--surface-2); color: var(--text); }
+.plan-item.dragging { opacity: .35; }
+.drag-ghost {
+  position: fixed; top: 0; left: 0; z-index: 50; margin: 0;
+  pointer-events: none; /* so the page can see which day is under the pointer */
+  background: var(--surface); border: 1px solid var(--accent) !important; border-radius: 12px;
+  padding: 6px 10px; box-shadow: 0 10px 30px rgb(0 0 0 / 20%); opacity: .95;
+}
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
+.day.drop-target { border-color: var(--accent); background: var(--accent-soft); }
+.plan-item.just-moved { animation: just-moved .9s ease-out; }
+@keyframes just-moved { from { background: var(--accent-soft); } to { background: transparent; } }

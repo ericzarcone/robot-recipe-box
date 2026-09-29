@@ -271,3 +271,42 @@ def test_plan_redirects_point_at_the_stored_plan(client, recipe):
     assert location(f"/plans/{plan_id}/items/{item.id}/delete") == f"/plans/{plan_id}"
     # A plan that does not exist gets a 404, not a redirect.
     assert client.post("/plans/999/grocery/reset", follow_redirects=False).status_code == 404
+
+
+# ---------- plan page: "+" per day and drag between days ----------
+
+
+def test_move_item_changes_only_the_day(client, recipe):
+    plans = client.app.state.plans
+    plan = plans.create()
+    item = plans.add_item(plan.id, recipe.id, day="Mon", servings=8)
+    r = client.post(f"/plans/{plan.id}/items/{item.id}/move", json={"day": 4})
+    assert r.status_code == 200 and r.json() == {"ok": True}
+    moved = plans.get(plan.id).items[0]
+    assert (moved.day_name, moved.servings) == ("Friday", 8)  # servings kept
+    assert client.post(f"/plans/{plan.id}/items/{item.id}/move", json={"day": None}).status_code == 200
+    assert plans.get(plan.id).items[0].day is None
+    assert client.post(f"/plans/{plan.id}/items/{item.id}/move", json={"day": 9}).status_code == 400
+    assert client.post(f"/plans/{plan.id}/items/{item.id}/move", json={"day": "x"}).status_code == 422
+    assert client.post(f"/plans/{plan.id}/items/999/move", json={"day": 1}).status_code == 404
+
+
+def test_plan_page_has_add_buttons_and_drop_targets(client, recipe):
+    plans = client.app.state.plans
+    plan = plans.create()
+    item = plans.add_item(plan.id, recipe.id, day="Wed")
+    page = client.get(f"/plans/{plan.id}").text
+    assert page.count('class="icon-btn day-add"') == 8  # seven days and "Any day"
+    assert 'aria-label="Add a recipe to Wednesday"' in page
+    assert page.count('class="day-items"') == 8  # every day is a drop target, even empty ones
+    assert 'id="day-any" data-day=""' in page
+    assert f'data-item="{item.id}"' in page
+    assert f'aria-label="Drag {recipe.title} to another day"' in page
+
+
+def test_picker_preselects_the_day(client, recipe):
+    plan = client.app.state.plans.create()
+    html = client.get(f"/plans/{plan.id}/picker?day=3").text
+    assert '<option value="3" selected>Thu</option>' in html
+    assert " selected>" not in client.get(f"/plans/{plan.id}/picker").text
+    assert client.get(f"/plans/{plan.id}/picker?day=funday").status_code == 400

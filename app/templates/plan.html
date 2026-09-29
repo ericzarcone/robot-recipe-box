@@ -25,42 +25,48 @@
 </header>
 
 <section class="picker card" id="picker" data-plan="{{ plan.id }}" hidden>
+  <p class="picker-for muted small" id="picker-for" hidden></p>
   <input type="search" id="picker-q" placeholder="Search your recipes…" aria-label="Search recipes to add" autocomplete="off">
   <div id="picker-results" aria-live="polite"></div>
 </section>
 
-<div class="week">
+<div class="week" id="week" data-plan="{{ plan.id }}">
   {% for day, items in plan.by_day() %}
-  {% if day is not none or items %}
-  <section class="day{% if not items %} empty-day{% endif %}{% if day is not none and plan.date_for(day) == today %} today{% endif %}">
+  {% set day_name = days[day] if day is not none else "Any day" %}
+  <section class="day{% if day is not none and plan.date_for(day) == today %} today{% endif %}"
+           id="day-{{ day if day is not none else 'any' }}" data-day="{{ day if day is not none else '' }}">
     <h2>
-      {{ days[day] if day is not none else "Any day" }}
+      <span>{{ day_name }}</span>
       {% if day is not none and plan.date_for(day) %}<span class="date">{{ plan.date_for(day).strftime("%b") }} {{ plan.date_for(day).day }}</span>{% endif %}
+      <button type="button" class="icon-btn day-add" data-day="{{ day if day is not none else '' }}"
+              data-day-name="{{ day_name }}" aria-label="Add a recipe to {{ day_name }}">+</button>
     </h2>
-    {% for item in items %}
-    <div class="plan-item" id="item-{{ item.id }}">
-      <a class="title" href="/r/{{ item.recipe.slug }}">{% if item.recipe.favorite %}<span class="star">★</span> {% endif %}{{ item.recipe.title }}</a>
-      <form method="post" action="/plans/{{ plan.id }}/items/{{ item.id }}" class="item-edit autosubmit">
-        <label class="sr-only" for="day-{{ item.id }}">Day</label>
-        <select id="day-{{ item.id }}" name="day">
-          <option value=""{% if item.day is none %} selected{% endif %}>Any day</option>
-          {% for d in days %}<option value="{{ loop.index0 }}"{% if item.day == loop.index0 %} selected{% endif %}>{{ d[:3] }}</option>{% endfor %}
-        </select>
-        <label class="sr-only" for="srv-{{ item.id }}">Servings</label>
-        <input id="srv-{{ item.id }}" name="servings" inputmode="numeric" size="3"
-               value="{{ item.servings or '' }}" placeholder="{{ item.recipe.servings or '–' }}" aria-describedby="srv-hint">
-        <span class="unit">servings</span>
-        <noscript><button class="btn" type="submit">Save</button></noscript>
-      </form>
-      <form method="post" action="/plans/{{ plan.id }}/items/{{ item.id }}/delete" class="inline">
-        <button type="submit" class="icon-btn" aria-label="Remove {{ item.recipe.title }} from plan">✕</button>
-      </form>
+    <div class="day-items">
+      {% for item in items %}
+      <div class="plan-item" id="item-{{ item.id }}" data-item="{{ item.id }}">
+        <button type="button" class="drag-handle" aria-label="Drag {{ item.recipe.title }} to another day"
+                title="Drag to another day">⠿</button>
+        <a class="title" href="/r/{{ item.recipe.slug }}">{% if item.recipe.favorite %}<span class="star">★</span> {% endif %}{{ item.recipe.title }}</a>
+        <form method="post" action="/plans/{{ plan.id }}/items/{{ item.id }}" class="item-edit autosubmit">
+          <label class="sr-only" for="day-{{ item.id }}">Day</label>
+          <select id="day-{{ item.id }}" name="day">
+            <option value=""{% if item.day is none %} selected{% endif %}>Any day</option>
+            {% for d in days %}<option value="{{ loop.index0 }}"{% if item.day == loop.index0 %} selected{% endif %}>{{ d[:3] }}</option>{% endfor %}
+          </select>
+          <label class="sr-only" for="srv-{{ item.id }}">Servings</label>
+          <input id="srv-{{ item.id }}" name="servings" inputmode="numeric" size="3"
+                 value="{{ item.servings or '' }}" placeholder="{{ item.recipe.servings or '–' }}" aria-describedby="srv-hint">
+          <span class="unit">servings</span>
+          <noscript><button class="btn" type="submit">Save</button></noscript>
+        </form>
+        <form method="post" action="/plans/{{ plan.id }}/items/{{ item.id }}/delete" class="inline">
+          <button type="submit" class="icon-btn" aria-label="Remove {{ item.recipe.title }} from plan">✕</button>
+        </form>
+      </div>
+      {% endfor %}
     </div>
-    {% else %}
     <p class="muted small nothing">Nothing planned</p>
-    {% endfor %}
   </section>
-  {% endif %}
   {% endfor %}
 </div>
 <p class="muted small" id="srv-hint">Servings scale the grocery list. Leave blank to use the recipe's own servings.</p>
